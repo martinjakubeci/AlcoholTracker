@@ -12,6 +12,12 @@ else
     @session.DateTime.ToString("G")
     <span> - </span>
     @session.EndDateTime?.ToString("G")
+    <br/>
+
+    if(peak != null)
+    {
+        <span>Peak level </span>@peak.Value<span> at </span>@peak.DateTime.ToString("G")
+    }
 
     <table class="table">
         <thead>
@@ -31,20 +37,14 @@ else
         </tbody>
     </table>
 
-    @* <ApexChart TItem="HealthEntry" Title="Levels" XAxisType="XAxisType.Datetime" Options="options">
-        <ApexPointSeries TItem="HealthEntry"
-                         Items="graphAlcoholConsumptionData"
-                         Name="Alcohol consumption"
-                         SeriesType="SeriesType.Scatter"
-                         XValue="e => e.DateTime"
-                         YValue="e => 1m" />
+    <ApexChart TItem="HealthEntry" Title="Levels" XAxisType="XAxisType.Datetime" Options="options" Debug>
         <ApexPointSeries TItem="HealthEntry"
                          Items="graphAlcoholLevelData"
                          Name="Alcohol level"
                          SeriesType="SeriesType.Line"
-                         XValue="e => e.DateTime"
+                         XValue="e => e.DateTime.ToUnixTimeMilliseconds()"
                          YValue="e => e.Value" />
-    </ApexChart> *@
+    </ApexChart>
 }
 
 @code {
@@ -56,7 +56,9 @@ else
     HealthEntry[] graphAlcoholLevelData = new HealthEntry[0];
     HealthEntry[] graphAlcoholConsumptionData = new HealthEntry[0];
 
-    //ApexChartOptions<HealthEntry> options { get; set; } = new();
+    HealthEntry? peak = null;
+
+    ApexChartOptions<HealthEntry> options { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,5 +72,19 @@ else
 
         graphAlcoholLevelData = data.Where(e => e.Type == HealthEntryType.AlcoholLevel).ToArray();
         graphAlcoholConsumptionData = data.Where(e => e.Type == HealthEntryType.AlcoholConsumption).ToArray();
+
+        peak = graphAlcoholLevelData.MaxBy(e => e.Value);
+
+        options.Markers = new Markers { Size = 6 };
+        options.Annotations = new Annotations()
+            {
+                Xaxis = graphAlcoholConsumptionData.Select(e => new AnnotationsXAxis
+                {
+                    X = e.DateTime.ToUnixTimeMilliseconds(),
+                    BorderWidth = 2,
+                    BorderColor = "#775DD0",
+                    FillColor = "#775DD0",
+                }).ToList()
+            };
     }
 }
