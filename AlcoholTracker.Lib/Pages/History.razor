@@ -1,0 +1,46 @@
+﻿@page "/history"
+@inject IHealthRepository healthRepository
+
+<h1>History</h1>
+
+@if (data == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date+time</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var record in data)
+            {
+                <tr>
+                    <td>@record.DateTime.ToString("G")</td>
+
+                    @if (record.EndDateTime == null)
+                    {
+                        <td>@record.Description</td>
+                    }
+                    else
+                    {
+                        <td><a href="session/@record.Id">@record.Description</a></td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private HealthEntry[]? data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        data = await healthRepository.GetAll();
+    }
+}

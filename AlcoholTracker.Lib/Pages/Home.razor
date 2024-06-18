@@ -1,0 +1,84 @@
+﻿@page "/"
+@inject IHealthRepository healthRepository
+@inject ISettingsRepository settingsRepository
+
+<h1>Hello, world!</h1>
+
+@if (sessionStarted == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    if (sessionStarted == false)
+    {
+        <button class="btn btn-primary" @onclick="StartSession">Start session</button>
+        <InputDate @bind-Value="@selectedDate" />
+        <InputDate Type="InputDateType.Time" @bind-Value="@selectedTime" />
+    }
+    else if (sessionStarted == true)
+    {
+        <button class="btn btn-primary" @onclick="Drink">Drink</button>
+        <br/>
+        <span>Meal:</span>
+        <button class="btn btn-primary" @onclick="() => Meal(MealSize.Small)">Small</button>
+        <button class="btn btn-primary" @onclick="() => Meal(MealSize.Medium)">Medium</button>
+        <button class="btn btn-primary" @onclick="() => Meal(MealSize.Big)">Big</button>
+        <br/>
+        <span>Feeling:</span>
+        <button class="btn btn-primary" @onclick="() => Feeling(FeelingType.Great)">Great</button>
+        <button class="btn btn-primary" @onclick="() => Feeling(FeelingType.Normal)">Normal</button>
+        <button class="btn btn-primary" @onclick="() => Feeling(FeelingType.Bad)">Bad</button>
+        <button class="btn btn-primary" @onclick="() => Feeling(FeelingType.Vomit)">Vomit</button>
+        <br/>
+        <button class="btn btn-primary" @onclick="StopSession">Stop session</button>
+        <InputDate @bind-Value="@selectedDate" />
+        <InputDate Type="InputDateType.Time" @bind-Value="@selectedTime" />
+    }
+}
+
+@code {
+    bool? sessionStarted;
+    DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
+    TimeOnly selectedTime = TimeOnly.FromDateTime(DateTime.Now);
+    DateTime selectedDateTime => selectedDate.ToDateTime(selectedTime, DateTimeKind.Local);
+
+    protected override Task OnInitializedAsync()
+    {
+        sessionStarted = settingsRepository.Get("SessionStarted", false);
+
+        return Task.CompletedTask;
+    }
+
+    void StartSession()
+    {
+        sessionStarted = true;
+        settingsRepository.Set("SessionStarted", sessionStarted ?? true);
+        settingsRepository.Set("SessionStart", selectedDateTime);
+    }
+
+    Task StopSession()
+    {
+        sessionStarted = false;
+        settingsRepository.Set("SessionStarted", sessionStarted ?? false);
+        var sessionStart = settingsRepository.Get("SessionStart", DateTime.Now);
+        var sessionEnd = selectedDateTime;
+
+        return healthRepository.StoreSession(sessionStart, sessionEnd);
+    }
+
+    Task Drink()
+    {
+        return healthRepository.StoreDrink();
+    }
+
+    void Feeling(FeelingType feelingType)
+    {
+
+    }
+
+    void Meal(MealSize mealSize)
+    {
+
+    }
+}

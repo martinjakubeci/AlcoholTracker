@@ -1,0 +1,74 @@
+﻿@page "/session/{id}"
+@inject IHealthRepository healthRepository
+
+<h1>Session</h1>
+
+@if (data == null || session == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @session.DateTime.ToString("G")
+    <span> - </span>
+    @session.EndDateTime?.ToString("G")
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date+time</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var record in data)
+            {
+                <tr>
+                    <td>@record.DateTime.ToString("G")</td>
+                    <td>@record.Description</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @* <ApexChart TItem="HealthEntry" Title="Levels" XAxisType="XAxisType.Datetime" Options="options">
+        <ApexPointSeries TItem="HealthEntry"
+                         Items="graphAlcoholConsumptionData"
+                         Name="Alcohol consumption"
+                         SeriesType="SeriesType.Scatter"
+                         XValue="e => e.DateTime"
+                         YValue="e => 1m" />
+        <ApexPointSeries TItem="HealthEntry"
+                         Items="graphAlcoholLevelData"
+                         Name="Alcohol level"
+                         SeriesType="SeriesType.Line"
+                         XValue="e => e.DateTime"
+                         YValue="e => e.Value" />
+    </ApexChart> *@
+}
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    HealthEntry[]? data;
+    HealthEntry? session;
+    HealthEntry[] graphAlcoholLevelData = new HealthEntry[0];
+    HealthEntry[] graphAlcoholConsumptionData = new HealthEntry[0];
+
+    //ApexChartOptions<HealthEntry> options { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var entries = await healthRepository.GetAll();
+        session = entries.FirstOrDefault(e => e.Id == Id);
+
+        if (session != null)
+            data = entries.Where(e => e.Type != HealthEntryType.Session && e.DateTime >= session.DateTime && e.DateTime <= session.EndDateTime).ToArray();
+        else
+            data = new HealthEntry[0];
+
+        graphAlcoholLevelData = data.Where(e => e.Type == HealthEntryType.AlcoholLevel).ToArray();
+        graphAlcoholConsumptionData = data.Where(e => e.Type == HealthEntryType.AlcoholConsumption).ToArray();
+    }
+}
