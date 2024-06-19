@@ -7,8 +7,8 @@ namespace AlcoholTracker.Platforms.iOS;
 public class IosHealthRepository : IHealthRepository
 {
     private HKHealthStore healthKitStore = new HKHealthStore();
-    private HKQuantityType BacType => HKQuantityType.Create(HKQuantityTypeIdentifier.BloodAlcoholContent)!;
-    private HKQuantityType DrinksType => HKQuantityType.Create(HKQuantityTypeIdentifier.NumberOfAlcoholicBeverages)!;
+    private static HKQuantityType BacType => HKQuantityType.Create(HKQuantityTypeIdentifier.BloodAlcoholContent)!;
+    private static HKQuantityType DrinksType => HKQuantityType.Create(HKQuantityTypeIdentifier.NumberOfAlcoholicBeverages)!;
 
     public void Initialize()
     {
@@ -20,7 +20,7 @@ public class IosHealthRepository : IHealthRepository
         var tcs = new TaskCompletionSource<HealthEntry[]>();
         var task = tcs.Task;
 
-        var sort = new NSSortDescriptor(HKSample.SortIdentifierStartDate, false);
+        var sort = new NSSortDescriptor(HKSample.SortIdentifierStartDate, true);
         var descriptor1 = new HKQueryDescriptor(BacType, null);
         var descriptor2 = new HKQueryDescriptor(DrinksType, null);
         var descriptor3 = new HKQueryDescriptor(HKObjectType.WorkoutType, null);
@@ -29,7 +29,7 @@ public class IosHealthRepository : IHealthRepository
         var query = new HKSampleQuery([descriptor1, descriptor2, descriptor3], 100, [sort], (_, results, error) =>
         {
             var data = results?.Select(ToHealthEntry)?.Where(r => r != null).ToArray();
-            tcs.SetResult(data ?? new HealthEntry[0]);
+            tcs.SetResult(data ?? Array.Empty<HealthEntry>());
         });
 
         healthKitStore.ExecuteQuery(query);
@@ -39,7 +39,8 @@ public class IosHealthRepository : IHealthRepository
 
     private static HealthEntry? ToHealthEntry(HKSample record) => record switch
     {
-        HKQuantitySample sample => new HealthEntry(HealthEntryType.AlcoholLevel, sample.Uuid.ToString(), (DateTime)sample.StartDate, (decimal)sample.Quantity.GetDoubleValue(HKUnit.Percent), $"Alcohol {sample.Quantity}"),
+        HKQuantitySample sample when sample.QuantityType.Description == BacType.Description => new HealthEntry(HealthEntryType.AlcoholLevel, sample.Uuid.ToString(), (DateTime)sample.StartDate, (decimal)sample.Quantity.GetDoubleValue(HKUnit.Percent), $"Alcohol {sample.Quantity}"),
+        HKQuantitySample sample when sample.QuantityType.Description == DrinksType.Description => new HealthEntry(HealthEntryType.AlcoholConsumption, sample.Uuid.ToString(), (DateTime)sample.StartDate, (decimal)sample.Quantity.GetDoubleValue(HKUnit.Percent), $"Alcohol"),
         HKWorkout workout when workout.WorkoutActivityType == HKWorkoutActivityType.SocialDance => new HealthEntry(HealthEntryType.Session, workout.Uuid.ToString(), (DateTime)workout.StartDate, 0, "Session", (DateTime)workout.EndDate),
         _ => null
     };

@@ -75,6 +75,16 @@ else
 
         peak = graphAlcoholLevelData.MaxBy(e => e.Value);
 
+        var lastAlcoholLevel = graphAlcoholLevelData.MaxBy(e => e.DateTime);
+
+        if (lastAlcoholLevel != null && lastAlcoholLevel.Value != 0)
+        {
+            var drinksAfterLastAlcoholLevel = graphAlcoholConsumptionData.Where(e => e.DateTime >= lastAlcoholLevel.DateTime).Sum(e => e.Value);
+            var hoursToSober = (lastAlcoholLevel.Value + (drinksAfterLastAlcoholLevel * 0.002m)) / 0.001m;
+
+            graphAlcoholLevelData = graphAlcoholLevelData.Append(new HealthEntry(HealthEntryType.AlcoholLevel, Guid.NewGuid().ToString(), lastAlcoholLevel.DateTime.AddHours((int)hoursToSober), 0, string.Empty)).ToArray();
+        }
+
         options.Markers = new Markers { Size = 6 };
         options.Annotations = new Annotations()
             {
@@ -84,7 +94,28 @@ else
                     BorderWidth = 2,
                     BorderColor = "#775DD0",
                     FillColor = "#775DD0",
-                }).ToList()
+                }).ToList(),
             };
+
+        options.Annotations.Yaxis = new[] { new AnnotationsYAxis
+                {
+                    Y = 0.01m,
+                    Label = new()
+                    {
+                        BorderColor = "#775DD0",
+                        Text = new("Optimal")
+                    },
+                }}.ToList();
+
+        if (peak != null)
+            options.Annotations.Yaxis.Add(new AnnotationsYAxis
+                {
+                    Y = peak.Value,
+                    Label = new()
+                    {
+                        BorderColor = "#775DD0",
+                        Text = new("Peak")
+                    },
+                });
     }
 }
