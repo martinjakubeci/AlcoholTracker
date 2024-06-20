@@ -1,0 +1,24 @@
+﻿@page "/profile"
+@inject ProfileService profileService
+
+<h1>Profile</h1>
+
+<table class="table">
+    <tbody>
+        <tr>
+            <td>Drink effect</td>
+            <td><InputNumber @bind-Value=profileService.DrinkEffect /></td>
+        </tr>
+        <tr>
+            <td>Sobriety pace</td>
+            <td><InputNumber @bind-Value=profileService.SobrietyPace /></td>
+        </tr>
+    </tbody>
+</table>
+
+@code {
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+}

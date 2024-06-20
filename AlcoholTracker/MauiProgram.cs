@@ -17,9 +17,10 @@ namespace AlcoholTracker
 
             builder.Services.AddMauiBlazorWebView();
             builder.Services.AddSingleton<ISettingsRepository, SettingsRepository>();
+            builder.Services.AddSingleton<ProfileService>();
 
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
 

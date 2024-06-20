@@ -1,0 +1,19 @@
+﻿@typeparam TItem where TItem : struct, Enum
+
+@foreach(var option in options)
+{
+	<button class="btn btn-primary" @onclick="() => Clicked(option)">@option</button>
+}
+
+@code {
+	string[] options = Enum.GetNames<TItem>();
+
+	[Parameter]
+	public Action<TItem>? Action { get; set; } = null;
+
+	void Clicked(string name)
+	{
+		var value = Enum.Parse<TItem>(name);
+		Action?.Invoke(value);
+	}
+}

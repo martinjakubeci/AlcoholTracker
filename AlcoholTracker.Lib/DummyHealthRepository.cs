@@ -12,22 +12,23 @@ public class DummyHealthRepository : IHealthRepository
         new HealthEntry(HealthEntryType.AlcoholConsumption, "", new DateTime(2024, 6, 17, 23, 30, 0), 0.3m, "Alcohol"),
     }.ToList();
 
-    public Task<HealthEntry[]> GetAll()
-    {
-        return Task.FromResult(healthEntries.OrderBy(e => e.DateTime).ToArray());
-    }
+    public Task<HealthEntry?> Get(string id) => Task.FromResult(healthEntries.FirstOrDefault(e => e.Id == id));
+
+    public Task<HealthEntry[]> GetAll() => Task.FromResult(healthEntries.OrderBy(e => e.DateTime).ToArray());
 
     public void Initialize() { }
 
-    public Task<bool> StoreDrink()
+    public Task<bool> StoreDrink(DateTime at)
     {
-        healthEntries.Add(new HealthEntry(HealthEntryType.AlcoholConsumption, Guid.NewGuid().ToString(), DateTime.Now, 1, "Drink"));
+        healthEntries.Add(new HealthEntry(HealthEntryType.AlcoholConsumption, Guid.NewGuid().ToString(), at, 1, "Drink"));
 
         return Task.FromResult(true);
     }
 
     public Task<bool> StoreSession(DateTime start, DateTime end)
     {
+        healthEntries.Add(new HealthEntry(HealthEntryType.Session, Guid.NewGuid().ToString(), start, 0, "Session", end));
+
         return Task.FromResult(true);
     }
 }

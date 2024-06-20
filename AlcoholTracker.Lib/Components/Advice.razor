@@ -1,0 +1,57 @@
+﻿@inject IHealthRepository healthRepository
+@inject ProfileService profileService
+
+<h1>Session</h1>
+
+@if (data == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <tbody>
+            @foreach (var record in data)
+            {
+                <tr>
+                    <td>@record.Name</td>
+                    <td>@record.Value</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public DateTime Start { get; set; }
+
+    [Parameter]
+    public int SoberIn { get; set; }
+
+    (string Name, string Value)[]? data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var entries = (await healthRepository.GetAll()).Where(e => e.Type != HealthEntryType.Session && e.DateTime >= Start).ToArray();
+        var drinkCount = entries.Where(e => e.Type == HealthEntryType.AlcoholConsumption).Sum(e => e.Value);
+        var duration = DateTime.Now - Start;
+        var drinkPace = drinkCount / (decimal)duration.TotalHours;
+        var lastAlcoholEntry = entries.Where(e => e.Type == HealthEntryType.AlcoholLevel).MaxBy(e => e.DateTime);
+        var lastAlcoholLevel = lastAlcoholEntry?.Value ?? 0m;
+        var lastAlcoholAt = lastAlcoholEntry?.DateTime ?? DateTime.Now;
+        var durationSinceLastLevel = DateTime.Now - lastAlcoholAt;
+        var drinksAfterLastLevel = entries.Where(e => e.Type == HealthEntryType.AlcoholConsumption && e.DateTime >= lastAlcoholAt).Sum(e => e.Value);
+        var currentAlcoholLevel = lastAlcoholLevel + drinksAfterLastLevel * profileService.DrinkEffect - (decimal)durationSinceLastLevel.TotalHours * profileService.SobrietyPace;
+        var soberIn = currentAlcoholLevel / profileService.SobrietyPace;
+        var soberAt = DateTime.Now.AddHours((double)soberIn);
+
+        data = new (string Name, string Value)[]
+        {
+            new("Drink count", drinkCount.ToString()),
+            new("Last alcohol level", lastAlcoholLevel.ToString()),
+            new("Current alcohol level", currentAlcoholLevel.ToString()),
+            new("Sober at", soberAt.ToString()),
+        };
+    }
+}

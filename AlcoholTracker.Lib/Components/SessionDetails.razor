@@ -1,0 +1,131 @@
+﻿@inject IHealthRepository healthRepository
+
+<h1>Session</h1>
+
+@if (data == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @Start.ToString("G")
+
+    @if (End != null)
+    {
+        <span> - </span>
+        @End.Value.ToString("G")
+    }
+    <br />
+
+    if (peak != null)
+    {
+        <span>Peak level </span>
+
+        @peak.Value
+
+        <span> at </span>
+
+        @peak.DateTime.ToString("G")
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date+time</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var record in data)
+            {
+                <tr>
+                    <td>@record.DateTime.ToString("G")</td>
+                    <td>@record.Description</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <ApexChart TItem="HealthEntry" Title="Levels" XAxisType="XAxisType.Datetime" Options="options" Debug>
+     <ApexPointSeries TItem="HealthEntry"
+                      Items="graphAlcoholLevelData"
+                      Name="Alcohol level"
+                      SeriesType="SeriesType.Line"
+                      XValue="e => e.DateTime.ToUnixTimeMilliseconds()"
+                      YValue="e => e.Value" />
+ </ApexChart>
+}
+
+@code {
+    [Parameter]
+    public DateTime Start { get; set; }
+
+    [Parameter]
+    public DateTime? End { get; set; }
+
+    HealthEntry[]? data;
+    HealthEntry[] graphAlcoholLevelData = new HealthEntry[0];
+    HealthEntry[] graphAlcoholConsumptionData = new HealthEntry[0];
+
+    HealthEntry? peak = null;
+
+    ApexChartOptions<HealthEntry> options { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var entries = await healthRepository.GetAll();
+
+        data = entries.Where(e => e.Type != HealthEntryType.Session && e.DateTime >= Start).ToArray();
+
+        if (End != null)
+            data = data.Where(e => e.DateTime <= End.Value).ToArray();
+
+        graphAlcoholLevelData = data.Where(e => e.Type == HealthEntryType.AlcoholLevel).ToArray();
+        graphAlcoholConsumptionData = data.Where(e => e.Type == HealthEntryType.AlcoholConsumption).ToArray();
+
+        peak = graphAlcoholLevelData.MaxBy(e => e.Value);
+
+        var lastAlcoholLevel = graphAlcoholLevelData.MaxBy(e => e.DateTime);
+
+        if (lastAlcoholLevel != null && lastAlcoholLevel.Value != 0)
+        {
+            var drinksAfterLastAlcoholLevel = graphAlcoholConsumptionData.Where(e => e.DateTime >= lastAlcoholLevel.DateTime).Sum(e => e.Value);
+            var hoursToSober = (lastAlcoholLevel.Value + (drinksAfterLastAlcoholLevel * 0.002m)) / 0.001m;
+
+            graphAlcoholLevelData = graphAlcoholLevelData.Append(new HealthEntry(HealthEntryType.AlcoholLevel, Guid.NewGuid().ToString(), lastAlcoholLevel.DateTime.AddHours((int)hoursToSober), 0, string.Empty)).ToArray();
+        }
+
+        options.Markers = new Markers { Size = 6 };
+        options.Annotations = new Annotations()
+            {
+                Xaxis = graphAlcoholConsumptionData.Select(e => new AnnotationsXAxis
+                {
+                    X = e.DateTime.ToUnixTimeMilliseconds(),
+                    BorderWidth = 2,
+                    BorderColor = "#775DD0",
+                    FillColor = "#775DD0",
+                }).ToList(),
+            };
+
+        options.Annotations.Yaxis = new[] { new AnnotationsYAxis
+                {
+                    Y = 0.01m,
+                    Label = new()
+                    {
+                        BorderColor = "#775DD0",
+                        Text = new("Optimal")
+                    },
+                }}.ToList();
+
+        if (peak != null)
+            options.Annotations.Yaxis.Add(new AnnotationsYAxis
+                {
+                    Y = peak.Value,
+                    Label = new()
+                    {
+                        BorderColor = "#775DD0",
+                        Text = new("Peak")
+                    },
+                });
+    }
+}

@@ -59,13 +59,12 @@ public class IosHealthRepository : IHealthRepository
         }
     }
 
-    public async Task<bool> StoreDrink()
+    public async Task<bool> StoreDrink(DateTime at)
     {
         var tcs = new TaskCompletionSource<bool>();
         var task = tcs.Task;
-        var now = DateTime.Now;
         var qty = HKQuantity.FromQuantity(HKUnit.Count, 1);
-        var sample = HKQuantitySample.FromType(DrinksType, qty, (NSDate)now, (NSDate)now);
+        var sample = HKQuantitySample.FromType(DrinksType, qty, (NSDate)at, (NSDate)at);
 
         healthKitStore.SaveObject(sample, (result, _) => tcs.SetResult(result));
 
@@ -81,5 +80,12 @@ public class IosHealthRepository : IHealthRepository
         healthKitStore.SaveObject(workout, (result, _) => tcs.SetResult(result));
 
         return await task;
+    }
+
+    public async Task<HealthEntry?> Get(string id)
+    {
+        var all = await GetAll();
+
+        return all.FirstOrDefault(x => x.Id == id);
     }
 }

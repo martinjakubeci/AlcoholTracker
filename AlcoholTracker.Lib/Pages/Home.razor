@@ -10,42 +10,59 @@
 }
 else
 {
+    <span>Custom date/time: </span><InputCheckbox @bind-Value=customDateTime />
+    <br/>
+    if (customDateTime)
+    {
+        <InputDate @bind-Value="@selectedDate" />
+        <InputDate Type="InputDateType.Time" @bind-Value="@selectedTime" />
+        <br />
+    }
+
     if (sessionStarted == false)
     {
         <button class="btn btn-primary" @onclick="StartSession">Start session</button>
-        <InputDate @bind-Value="@selectedDate" />
-        <InputDate Type="InputDateType.Time" @bind-Value="@selectedTime" />
+        <span>Sober in </span>
+        <InputNumber @bind-Value=soberIn /> <span> hours</span>
     }
     else if (sessionStarted == true)
     {
         <button class="btn btn-primary" @onclick="Drink">Drink</button>
         <br/>
         <span>Meal:</span>
-        <button class="btn btn-primary" @onclick="() => Meal(MealSize.Small)">Small</button>
-        <button class="btn btn-primary" @onclick="() => Meal(MealSize.Medium)">Medium</button>
-        <button class="btn btn-primary" @onclick="() => Meal(MealSize.Big)">Big</button>
+        <EnumActions TItem="MealSize" Action="Meal" />
         <br/>
         <span>Feeling:</span>
-        <button class="btn btn-primary" @onclick="() => Feeling(FeelingType.Great)">Great</button>
-        <button class="btn btn-primary" @onclick="() => Feeling(FeelingType.Normal)">Normal</button>
-        <button class="btn btn-primary" @onclick="() => Feeling(FeelingType.Bad)">Bad</button>
-        <button class="btn btn-primary" @onclick="() => Feeling(FeelingType.Vomit)">Vomit</button>
+        <EnumActions TItem="FeelingType" Action="Feeling" />
         <br/>
         <button class="btn btn-primary" @onclick="StopSession">Stop session</button>
-        <InputDate @bind-Value="@selectedDate" />
-        <InputDate Type="InputDateType.Time" @bind-Value="@selectedTime" />
+
+        if (sessionStart != null)
+        {
+            <SessionDetails Start=sessionStart.Value />
+            <Advice Start=sessionStart.Value SoberIn=soberIn />
+        }
     }
 }
 
 @code {
     bool? sessionStarted;
+    bool customDateTime = false;
+    DateTime? sessionStart;
     DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
     TimeOnly selectedTime = TimeOnly.FromDateTime(DateTime.Now);
-    DateTime selectedDateTime => selectedDate.ToDateTime(selectedTime, DateTimeKind.Local);
+    DateTime selectedDateTime => customDateTime ? selectedDate.ToDateTime(selectedTime, DateTimeKind.Local) : DateTime.Now;
+    int soberIn = 12;
 
     protected override Task OnInitializedAsync()
     {
         sessionStarted = settingsRepository.Get("SessionStarted", false);
+
+        if (sessionStarted == true)
+        {
+            sessionStart = settingsRepository.Get("SessionStart", DateTime.Now);
+            soberIn = settingsRepository.Get("SessionSoberIn", 12);
+        }
 
         return Task.CompletedTask;
     }
@@ -53,8 +70,10 @@ else
     void StartSession()
     {
         sessionStarted = true;
+        sessionStart = selectedDateTime;
         settingsRepository.Set("SessionStarted", sessionStarted ?? true);
-        settingsRepository.Set("SessionStart", selectedDateTime);
+        settingsRepository.Set("SessionStart", sessionStart.Value);
+        settingsRepository.Set("SessionSoberIn", soberIn);
     }
 
     Task StopSession()
@@ -69,7 +88,7 @@ else
 
     Task Drink()
     {
-        return healthRepository.StoreDrink();
+        return healthRepository.StoreDrink(selectedDateTime);
     }
 
     void Feeling(FeelingType feelingType)

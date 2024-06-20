@@ -10,7 +10,8 @@ public interface IHealthRepository
 {
     void Initialize();
     Task<HealthEntry[]> GetAll();
-    Task<bool> StoreDrink();
+    Task<HealthEntry?> Get(string id);
+    Task<bool> StoreDrink(DateTime at);
 
     Task<bool> StoreSession(DateTime start, DateTime end);
 }
