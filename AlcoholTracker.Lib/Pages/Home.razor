@@ -36,6 +36,9 @@ else
         <EnumActions TItem="FeelingType" Action="Feeling" />
         <br/>
         <button class="btn btn-primary" @onclick="StopSession">Stop session</button>
+        <br />
+        <InputNumber @bind-Value=alcoholLevel />
+        <button class="btn btn-primary" @onclick="AddAlcoholMeasure">Alcohol level</button>
 
         if (sessionStart != null)
         {
@@ -48,6 +51,7 @@ else
 @code {
     bool? sessionStarted;
     bool customDateTime = false;
+    decimal alcoholLevel = 0m;
     DateTime? sessionStart;
     DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
     TimeOnly selectedTime = TimeOnly.FromDateTime(DateTime.Now);
@@ -86,10 +90,9 @@ else
         return healthRepository.StoreSession(sessionStart, sessionEnd);
     }
 
-    Task Drink()
-    {
-        return healthRepository.StoreDrink(selectedDateTime);
-    }
+    Task Drink() => healthRepository.StoreDrink(selectedDateTime);
+
+    Task AddAlcoholMeasure() => healthRepository.StoreAlcoholLevel(alcoholLevel, selectedDateTime);
 
     void Feeling(FeelingType feelingType)
     {

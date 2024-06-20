@@ -12,7 +12,7 @@ public interface IHealthRepository
     Task<HealthEntry[]> GetAll();
     Task<HealthEntry?> Get(string id);
     Task<bool> StoreDrink(DateTime at);
-
+    Task<bool> StoreAlcoholLevel(decimal level, DateTime at);
     Task<bool> StoreSession(DateTime start, DateTime end);
 }
 

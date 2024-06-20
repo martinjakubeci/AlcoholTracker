@@ -6,7 +6,7 @@ namespace AlcoholTracker.Platforms.iOS;
 
 public class IosHealthRepository : IHealthRepository
 {
-    private HKHealthStore healthKitStore = new HKHealthStore();
+    private readonly HKHealthStore healthKitStore = new();
     private static HKQuantityType BacType => HKQuantityType.Create(HKQuantityTypeIdentifier.BloodAlcoholContent)!;
     private static HKQuantityType DrinksType => HKQuantityType.Create(HKQuantityTypeIdentifier.NumberOfAlcoholicBeverages)!;
 
@@ -28,8 +28,8 @@ public class IosHealthRepository : IHealthRepository
         //var query = new HKSampleQuery(BacType, null, 1, [descriptor], (_, results, error) =>
         var query = new HKSampleQuery([descriptor1, descriptor2, descriptor3], 100, [sort], (_, results, error) =>
         {
-            var data = results?.Select(ToHealthEntry)?.Where(r => r != null).ToArray();
-            tcs.SetResult(data ?? Array.Empty<HealthEntry>());
+            var data = results?.Select(ToHealthEntry).OfType<HealthEntry>().ToArray();
+            tcs.SetResult(data ?? []);
         });
 
         healthKitStore.ExecuteQuery(query);
@@ -59,17 +59,9 @@ public class IosHealthRepository : IHealthRepository
         }
     }
 
-    public async Task<bool> StoreDrink(DateTime at)
-    {
-        var tcs = new TaskCompletionSource<bool>();
-        var task = tcs.Task;
-        var qty = HKQuantity.FromQuantity(HKUnit.Count, 1);
-        var sample = HKQuantitySample.FromType(DrinksType, qty, (NSDate)at, (NSDate)at);
+    public Task<bool> StoreDrink(DateTime at) => StoreQuantitySample(DrinksType, 1m, at);
 
-        healthKitStore.SaveObject(sample, (result, _) => tcs.SetResult(result));
-
-        return await task;
-    }
+    public Task<bool> StoreAlcoholLevel(decimal level, DateTime at) => StoreQuantitySample(BacType, level, at);
 
     public async Task<bool> StoreSession(DateTime start, DateTime end)
     {
@@ -87,5 +79,17 @@ public class IosHealthRepository : IHealthRepository
         var all = await GetAll();
 
         return all.FirstOrDefault(x => x.Id == id);
+    }
+
+    private async Task<bool> StoreQuantitySample(HKQuantityType quantityType, decimal value, DateTime at)
+    {
+        var tcs = new TaskCompletionSource<bool>();
+        var task = tcs.Task;
+        var qty = HKQuantity.FromQuantity(HKUnit.Count, (double)value);
+        var sample = HKQuantitySample.FromType(quantityType, qty, (NSDate)at, (NSDate)at);
+
+        healthKitStore.SaveObject(sample, (result, _) => tcs.SetResult(result));
+
+        return await task;
     }
 }
