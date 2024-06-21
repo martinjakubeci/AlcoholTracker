@@ -39,9 +39,9 @@ public class IosHealthRepository : IHealthRepository
 
     private static HealthEntry? ToHealthEntry(HKSample record) => record switch
     {
-        HKQuantitySample sample when sample.QuantityType.Description == BacType.Description => new HealthEntry(HealthEntryType.AlcoholLevel, sample.Uuid.ToString(), (DateTime)sample.StartDate, (decimal)sample.Quantity.GetDoubleValue(HKUnit.Percent), $"Alcohol {sample.Quantity}"),
-        HKQuantitySample sample when sample.QuantityType.Description == DrinksType.Description => new HealthEntry(HealthEntryType.AlcoholConsumption, sample.Uuid.ToString(), (DateTime)sample.StartDate, (decimal)sample.Quantity.GetDoubleValue(HKUnit.Percent), $"Alcohol"),
-        HKWorkout workout when workout.WorkoutActivityType == HKWorkoutActivityType.SocialDance => new HealthEntry(HealthEntryType.Session, workout.Uuid.ToString(), (DateTime)workout.StartDate, 0, "Session", (DateTime)workout.EndDate),
+        HKQuantitySample sample when sample.QuantityType.Description == BacType.Description => new HealthEntry(HealthEntryType.AlcoholLevel, sample.Uuid.ToString(), ((DateTime)sample.StartDate).ToLocalTime(), (decimal)sample.Quantity.GetDoubleValue(HKUnit.Percent) * 100, $"Alcohol {sample.Quantity}"),
+        HKQuantitySample sample when sample.QuantityType.Description == DrinksType.Description => new HealthEntry(HealthEntryType.AlcoholConsumption, sample.Uuid.ToString(), ((DateTime)sample.StartDate).ToLocalTime(), (decimal)sample.Quantity.GetDoubleValue(HKUnit.Count), $"Alcohol"),
+        HKWorkout workout when workout.WorkoutActivityType == HKWorkoutActivityType.SocialDance => new HealthEntry(HealthEntryType.Session, workout.Uuid.ToString(), ((DateTime)workout.StartDate).ToLocalTime(), 0, "Session", ((DateTime)workout.EndDate).ToLocalTime()),
         _ => null
     };
 
@@ -67,7 +67,7 @@ public class IosHealthRepository : IHealthRepository
     {
         var tcs = new TaskCompletionSource<bool>();
         var task = tcs.Task;
-        var workout = HKWorkout.Create(HKWorkoutActivityType.SocialDance, (NSDate)start, (NSDate)end);
+        var workout = HKWorkout.Create(HKWorkoutActivityType.SocialDance, (NSDate)start.ToUniversalTime(), (NSDate)end.ToUniversalTime());
 
         healthKitStore.SaveObject(workout, (result, _) => tcs.SetResult(result));
 
@@ -83,6 +83,7 @@ public class IosHealthRepository : IHealthRepository
 
     private async Task<bool> StoreQuantitySample(HKQuantityType quantityType, decimal value, DateTime at)
     {
+        at = at.ToUniversalTime();
         var tcs = new TaskCompletionSource<bool>();
         var task = tcs.Task;
         var qty = HKQuantity.FromQuantity(HKUnit.Count, (double)value);

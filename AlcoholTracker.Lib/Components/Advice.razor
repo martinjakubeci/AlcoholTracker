@@ -42,7 +42,7 @@ else
         var lastAlcoholAt = lastAlcoholEntry?.DateTime ?? DateTime.Now;
         var durationSinceLastLevel = DateTime.Now - lastAlcoholAt;
         var drinksAfterLastLevel = entries.Where(e => e.Type == HealthEntryType.AlcoholConsumption && e.DateTime >= lastAlcoholAt).Sum(e => e.Value);
-        var currentAlcoholLevel = lastAlcoholLevel + drinksAfterLastLevel * profileService.DrinkEffect - (decimal)durationSinceLastLevel.TotalHours * profileService.SobrietyPace;
+        var currentAlcoholLevel = Math.Max(0m, lastAlcoholLevel + drinksAfterLastLevel * profileService.DrinkEffect - (decimal)durationSinceLastLevel.TotalHours * profileService.SobrietyPace);
         var soberIn = currentAlcoholLevel / profileService.SobrietyPace;
         var soberAt = DateTime.Now.AddHours((double)soberIn);
 

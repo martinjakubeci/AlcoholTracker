@@ -6,8 +6,8 @@ public class DummyHealthRepository : IHealthRepository
     [
         new HealthEntry(HealthEntryType.Session, "1", new DateTime(2024, 6, 17, 21, 0, 0), 1, "Session", new DateTime(2024, 6, 18, 2, 0, 0)),
         new HealthEntry(HealthEntryType.AlcoholLevel, "", new DateTime(2024, 6, 17, 21, 0, 0), 0, "Alcohol 0%"),
-        new HealthEntry(HealthEntryType.AlcoholLevel, "", new DateTime(2024, 6, 17, 23, 0, 0), 0.2m, "Alcohol 0.2%"),
-        new HealthEntry(HealthEntryType.AlcoholLevel, "", new DateTime(2024, 6, 18, 0, 30, 0), 0.4m, "Alcohol 0.4%"),
+        new HealthEntry(HealthEntryType.AlcoholLevel, "", new DateTime(2024, 6, 17, 23, 0, 0), 0.02m, "Alcohol 0.02%"),
+        new HealthEntry(HealthEntryType.AlcoholLevel, "", new DateTime(2024, 6, 18, 0, 30, 0), 0.04m, "Alcohol 0.04%"),
         new HealthEntry(HealthEntryType.AlcoholConsumption, "", new DateTime(2024, 6, 17, 21, 0, 0), 0.1m, "Alcohol"),
         new HealthEntry(HealthEntryType.AlcoholConsumption, "", new DateTime(2024, 6, 17, 23, 30, 0), 0.3m, "Alcohol"),
     ];
